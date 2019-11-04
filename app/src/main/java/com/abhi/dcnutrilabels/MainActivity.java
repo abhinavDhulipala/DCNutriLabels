@@ -74,7 +74,8 @@ public class MainActivity extends AppCompatActivity {
                 bitmap = BitmapFactory.decodeFile(filePath);
                 retPic.setImageBitmap(bitmap);
             } else if (requestCode == GALLERY_RESULT) {
-                Uri selectedImage = Objects.requireNonNull(data).getData();
+                assert data != null : "data should never be null";
+                Uri selectedImage = data.getData();
                 String[] filePathColumn = { MediaStore.Images.Media.DATA };
                 assert selectedImage != null : "selected image is null for some reason";
                 Cursor cursor = getContentResolver().query(selectedImage,
