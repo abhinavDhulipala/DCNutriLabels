@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">DCNutriLabels</string>
+    <string name="click">Click!</string>
+    <string name="pulls_image_from_either_gallery_or_camera">pulls image from either Gallery Or Camera</string>
+    <string name="gallery">Gallery</string>
+</resources>
