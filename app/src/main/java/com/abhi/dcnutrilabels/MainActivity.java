@@ -16,15 +16,24 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.ml.vision.FirebaseVision;
+import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.text.FirebaseVisionText;
+import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import static android.os.Environment.getExternalStoragePublicDirectory;
@@ -35,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     ImageView retPic;
     String filePath;
     Bitmap bitmap;
+    TextView readText;
     private static final int CAMERA_RESULT = 1, GALLERY_RESULT = 2;
 
     @Override
@@ -48,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         cameraButton = findViewById(R.id.cameraButton);
+        readText = findViewById(R.id.readText);
         cameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -66,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         retPic = findViewById(R.id.imageGOC);
     }
 
+    //probably needed to fix orientation
     private Bitmap fixOrientation(Bitmap source, String filePath) {
         ExifInterface metadata;
         try {
@@ -77,18 +89,16 @@ public class MainActivity extends AppCompatActivity {
         int orientation = metadata.getAttributeInt(ExifInterface.TAG_ORIENTATION
                 , ExifInterface.ORIENTATION_UNDEFINED);
 
-        switch (orientation) {
 
+        switch (orientation) {
             case ExifInterface.ORIENTATION_ROTATE_90:
                 return rotateImage(source, 90);
-
             case ExifInterface.ORIENTATION_ROTATE_180:
                 return rotateImage(source, 180);
-
             case ExifInterface.ORIENTATION_ROTATE_270:
                 return rotateImage(source, 270);
-
             default:
+                Log.d("yeet", "Exif interface false");
                 return source;
         }
     }
@@ -106,27 +116,49 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
             if (requestCode == CAMERA_RESULT) {
-                bitmap = rotateImage(BitmapFactory.decodeFile(filePath), 90);
+                //TODO(1): not a rigorous fix. Some phones might don't rotate like this
+                bitmap = BitmapFactory.decodeFile(filePath);
                 retPic.setImageBitmap(bitmap);
             } else if (requestCode == GALLERY_RESULT) {
                 assert data != null : "data should never be null";
                 Uri selectedImage = data.getData();
-                String[] filePathColumn = { MediaStore.Images.Media.DATA };
+                String[] filePathColumn = {MediaStore.Images.Media.DATA};
                 assert selectedImage != null : "selected image is null for some reason";
                 Cursor cursor = getContentResolver().query(selectedImage,
                         filePathColumn, null, null, null);
                 assert cursor != null : "cursor is null for some reason";
                 cursor.moveToFirst();
-
                 int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-                String picturePath = cursor.getString(columnIndex);
+                filePath = cursor.getString(columnIndex);
                 cursor.close();
-
                 ImageView imageView = findViewById(R.id.imageGOC);
-                imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
+                bitmap = BitmapFactory.decodeFile(filePath);
+                runTextRecognition(bitmap);
+                imageView.setImageBitmap(bitmap);
             }
-
         }
+    }
+
+    private void runTextRecognition(Bitmap bitmap) {
+        FirebaseVisionImage fbImage = FirebaseVisionImage.fromBitmap(bitmap);
+        FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+        detector.processImage(fbImage).addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
+            @Override
+            public void onSuccess(FirebaseVisionText firebaseVisionText) {
+                processTextRecognitionResults(firebaseVisionText);
+            }
+        });
+
+
+    }
+
+    private void processTextRecognitionResults(FirebaseVisionText firebaseVisionText) {
+        List<FirebaseVisionText.TextBlock> blocks = firebaseVisionText.getTextBlocks();
+        StringBuilder outputToView = new StringBuilder();
+        for (FirebaseVisionText.TextBlock block : blocks) {
+            outputToView.append(block.getText());
+        }
+        readText.setText(outputToView.toString());
     }
 
     private void retrieveImageFromCamera() {
