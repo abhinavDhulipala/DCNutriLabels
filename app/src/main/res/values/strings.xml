@@ -3,4 +3,6 @@
     <string name="click">Click!</string>
     <string name="pulls_image_from_either_gallery_or_camera">pulls image from either Gallery Or Camera</string>
     <string name="gallery">Gallery</string>
+    <string name="title_activity_picture_analysis">pictureAnalysis</string>
+    <string name="read_text_here">Read Text Here</string>
 </resources>
