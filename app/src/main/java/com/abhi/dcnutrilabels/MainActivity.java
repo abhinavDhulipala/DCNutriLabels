@@ -5,8 +5,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
-import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -76,39 +74,6 @@ public class MainActivity extends AppCompatActivity {
         retPic = findViewById(R.id.imageGOC);
     }
 
-    //probably needed to fix orientation
-    private Bitmap fixOrientation(Bitmap source, String filePath) {
-        ExifInterface metadata;
-        try {
-            metadata = new ExifInterface(filePath);
-        } catch (IOException e) {
-            Log.d("picSave", "Exception Thrown: " + e);
-            return source;
-        }
-        int orientation = metadata.getAttributeInt(ExifInterface.TAG_ORIENTATION
-                , ExifInterface.ORIENTATION_UNDEFINED);
-
-
-        switch (orientation) {
-            case ExifInterface.ORIENTATION_ROTATE_90:
-                return rotateImage(source, 90);
-            case ExifInterface.ORIENTATION_ROTATE_180:
-                return rotateImage(source, 180);
-            case ExifInterface.ORIENTATION_ROTATE_270:
-                return rotateImage(source, 270);
-            default:
-                Log.d("yeet", "Exif interface false");
-                return source;
-        }
-    }
-
-    private Bitmap rotateImage(Bitmap source, int angle) {
-        Matrix matrix = new Matrix();
-        matrix.postRotate(angle);
-        return Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight()
-                , matrix, true);
-    }
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -155,7 +120,9 @@ public class MainActivity extends AppCompatActivity {
         List<FirebaseVisionText.TextBlock> blocks = firebaseVisionText.getTextBlocks();
         StringBuilder outputToView = new StringBuilder();
         for (FirebaseVisionText.TextBlock block : blocks) {
-            outputToView.append(block.getText());
+            if (block.getText().toLowerCase().contains("ingredients")) {
+                outputToView.append(block.getText());
+            }
         }
         readText.setText(outputToView.toString());
     }
