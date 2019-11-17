@@ -13,7 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".pictureAnalysis"
+            android:name=".PictureAnalysis"
             android:label="@string/title_activity_picture_analysis"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar">

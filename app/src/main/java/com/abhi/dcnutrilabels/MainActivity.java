@@ -1,14 +1,12 @@
 package com.abhi.dcnutrilabels;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -16,13 +14,11 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
-import androidx.exifinterface.media.ExifInterface;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.ml.vision.FirebaseVision;
@@ -31,7 +27,6 @@ import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -46,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
     ImageView retPic;
     String filePath;
     Bitmap bitmap;
+    String readText;
+    boolean validImageToAnalyze = false;
+
     private static final int CAMERA_RESULT = 1, GALLERY_RESULT = 2;
 
     @Override
@@ -57,6 +55,16 @@ public class MainActivity extends AppCompatActivity {
         requestPermissions(permissionsForCameraAndExternalStorage, GALLERY_RESULT);
 
         retPic = findViewById(R.id.imageGOC);
+        retPic.setEnabled(validImageToAnalyze);
+        retPic.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                retPic.setEnabled(false);
+                Intent analyze = new Intent(getApplicationContext(), PictureAnalysis.class);
+                analyze.putExtra("readText", readText);
+                startActivity(analyze);
+            }
+        });
         cameraButton = findViewById(R.id.cameraButton);
         cameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -68,9 +76,11 @@ public class MainActivity extends AppCompatActivity {
         galleryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                galleryButton.setEnabled(false);
                 Intent openGallery = new Intent(Intent.ACTION_PICK
                         , MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(openGallery, GALLERY_RESULT);
+                galleryButton.setEnabled(true);
             }
         });
         rotateButton = findViewById(R.id.rotateButton);
@@ -145,11 +155,14 @@ public class MainActivity extends AppCompatActivity {
                 outputToView.append(block.getText());
             }
         }
+        readText = outputToView.toString();
         if (outputToView.length() == 0) {
             String message = "no ingredients found! Try rotating or try another image";
             Toast noneGleaned = Toast.makeText(getApplicationContext()
                     , message, Toast.LENGTH_LONG);
             noneGleaned.show();
+        } else {
+            retPic.setEnabled(validImageToAnalyze = true);
         }
     }
 
