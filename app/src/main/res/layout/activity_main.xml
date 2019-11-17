@@ -53,24 +53,8 @@
         android:layout_marginTop="1dp"
         android:backgroundTint="#4CAF50"
         android:text="@string/rotate"
-        android:visibility="visible"
         app:layout_constraintEnd_toStartOf="@+id/galleryButton"
         app:layout_constraintStart_toEndOf="@+id/cameraButton"
         app:layout_constraintTop_toTopOf="@+id/galleryButton" />
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="309dp"
-        android:layout_height="41dp"
-        android:layout_marginTop="41dp"
-        android:layout_marginBottom="103dp"
-        android:background="#00FFEB3B"
-        android:backgroundTint="#673AB7"
-        android:text="@string/take_the_pic_please"
-        android:visibility="visible"
-        app:layout_constraintBottom_toTopOf="@+id/imageGOC"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

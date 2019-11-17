@@ -1,6 +1,7 @@
 package com.abhi.dcnutrilabels;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -37,11 +38,10 @@ import static android.os.Environment.getExternalStoragePublicDirectory;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button cameraButton, galleryButton, rotateButton;
     ImageView retPic;
-    String filePath;
+    Button cameraButton, galleryButton, rotateButton;
     Bitmap bitmap;
-    String readText;
+    String readText, filePath;
     boolean validImageToAnalyze = false;
 
     private static final int CAMERA_RESULT = 1, GALLERY_RESULT = 2;
@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
                 Intent analyze = new Intent(getApplicationContext(), PictureAnalysis.class);
                 analyze.putExtra("readText", readText);
                 startActivity(analyze);
+                retPic.setEnabled(bitmap != null);
             }
         });
         cameraButton = findViewById(R.id.cameraButton);
@@ -156,12 +157,16 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         readText = outputToView.toString();
+        String message;
         if (outputToView.length() == 0) {
-            String message = "no ingredients found! Try rotating or try another image";
+            message = "No ingredients found! Try rotating or try another image";
             Toast noneGleaned = Toast.makeText(getApplicationContext()
-                    , message, Toast.LENGTH_LONG);
+                    , message, Toast.LENGTH_SHORT);
             noneGleaned.show();
         } else {
+            message = "We found something!! yay, click on image for analysis";
+            Toast gleaned = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG);
+            gleaned.show();
             retPic.setEnabled(validImageToAnalyze = true);
         }
     }
