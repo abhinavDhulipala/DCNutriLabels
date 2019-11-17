@@ -1,10 +1,12 @@
 package com.abhi.dcnutrilabels;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -15,10 +17,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
+import androidx.exifinterface.media.ExifInterface;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.ml.vision.FirebaseVision;
@@ -27,6 +31,7 @@ import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -37,25 +42,22 @@ import static android.os.Environment.getExternalStoragePublicDirectory;
 
 public class MainActivity extends AppCompatActivity {
 
-    Button cameraButton, galleryButton;
+    Button cameraButton, galleryButton, rotateButton;
     ImageView retPic;
     String filePath;
     Bitmap bitmap;
-    TextView readText;
     private static final int CAMERA_RESULT = 1, GALLERY_RESULT = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if (Build.VERSION.SDK_INT >= 23) {
-            String [] permissionsForCameraAndExternalStorage = {
-                    Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
-            requestPermissions(permissionsForCameraAndExternalStorage, 2);
-        }
+        String [] permissionsForCameraAndExternalStorage = {
+                Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+        requestPermissions(permissionsForCameraAndExternalStorage, GALLERY_RESULT);
 
+        retPic = findViewById(R.id.imageGOC);
         cameraButton = findViewById(R.id.cameraButton);
-        readText = findViewById(R.id.readText);
         cameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -71,9 +73,28 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(openGallery, GALLERY_RESULT);
             }
         });
-        retPic = findViewById(R.id.imageGOC);
+        rotateButton = findViewById(R.id.rotateButton);
+        rotateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                rotateButton.setEnabled(false);
+                if (bitmap == null) {
+                    Toast noImage = Toast.makeText(getApplicationContext()
+                            , "No image to rotate! Take a pic or pull from gallery :)"
+                            , Toast.LENGTH_LONG);
+                    noImage.show();
+                } else {
+                    Matrix rotate90 = new Matrix();
+                    rotate90.postRotate(90);
+                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth()
+                            , bitmap.getHeight(), rotate90,true);
+                    retPic.setImageBitmap(bitmap);
+                    runTextRecognition(bitmap);
+                }
+                rotateButton.setEnabled(true);
+            }
+        });
     }
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -83,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
                 //TODO(1): not a rigorous fix. Some phones might don't rotate like this
                 bitmap = BitmapFactory.decodeFile(filePath);
                 retPic.setImageBitmap(bitmap);
+                runTextRecognition(bitmap);
             } else if (requestCode == GALLERY_RESULT) {
                 assert data != null : "data should never be null";
                 Uri selectedImage = data.getData();
@@ -95,10 +117,9 @@ public class MainActivity extends AppCompatActivity {
                 int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
                 filePath = cursor.getString(columnIndex);
                 cursor.close();
-                ImageView imageView = findViewById(R.id.imageGOC);
                 bitmap = BitmapFactory.decodeFile(filePath);
                 runTextRecognition(bitmap);
-                imageView.setImageBitmap(bitmap);
+                retPic.setImageBitmap(bitmap);
             }
         }
     }
@@ -124,7 +145,12 @@ public class MainActivity extends AppCompatActivity {
                 outputToView.append(block.getText());
             }
         }
-        readText.setText(outputToView.toString());
+        if (outputToView.length() == 0) {
+            String message = "no ingredients found! Try rotating or try another image";
+            Toast noneGleaned = Toast.makeText(getApplicationContext()
+                    , message, Toast.LENGTH_LONG);
+            noneGleaned.show();
+        }
     }
 
     private void retrieveImageFromCamera() {
@@ -149,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             image = File.createTempFile(datedName, ".jpg", storeDir);
         } catch (IOException e) {
-            Log.d("picSave", "Exception Thrown: " + e);
+            Log.d("picSave", "IOException Thrown: " + e);
         }
         return image;
 

@@ -10,24 +10,25 @@
         android:id="@+id/cameraButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="48dp"
         android:layout_marginBottom="40dp"
         android:backgroundTint="#22A7B6"
         android:text="@string/click"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/galleryButton"
         app:layout_constraintStart_toStartOf="parent" />
 
     <ImageView
         android:id="@+id/imageGOC"
-        android:layout_width="327dp"
-        android:layout_height="275dp"
+        android:layout_width="354dp"
+        android:layout_height="320dp"
+        android:layout_marginBottom="293dp"
         android:contentDescription="@string/pulls_image_from_either_gallery_or_camera"
-        app:layout_constraintBottom_toTopOf="@+id/cameraButton"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.63"
+        app:layout_constraintHorizontal_bias="0.571"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.073"
+        app:layout_constraintTop_toBottomOf="@+id/textView"
+        app:layout_constraintVertical_bias="0.442"
         app:srcCompat="?attr/dividerVertical"
         tools:srcCompat="@mipmap/ic_launcher_round" />
 
@@ -36,7 +37,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="120dp"
-        android:layout_marginEnd="64dp"
+        android:layout_marginEnd="48dp"
         android:layout_marginBottom="40dp"
         android:backgroundTint="#A1B81717"
         android:text="@string/gallery"
@@ -45,15 +46,31 @@
         app:layout_constraintTop_toBottomOf="@+id/imageGOC"
         app:layout_constraintVertical_bias="1.0" />
 
+    <Button
+        android:id="@+id/rotateButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:backgroundTint="#4CAF50"
+        android:text="@string/rotate"
+        android:visibility="visible"
+        app:layout_constraintEnd_toStartOf="@+id/galleryButton"
+        app:layout_constraintStart_toEndOf="@+id/cameraButton"
+        app:layout_constraintTop_toTopOf="@+id/galleryButton" />
+
     <TextView
-        android:id="@+id/readText"
-        android:layout_width="119dp"
-        android:layout_height="62dp"
-        android:text="@string/read_text_here"
-        app:layout_constraintBottom_toTopOf="@+id/galleryButton"
+        android:id="@+id/textView"
+        android:layout_width="309dp"
+        android:layout_height="41dp"
+        android:layout_marginTop="41dp"
+        android:layout_marginBottom="103dp"
+        android:background="#00FFEB3B"
+        android:backgroundTint="#673AB7"
+        android:text="@string/take_the_pic_please"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@+id/imageGOC"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imageGOC"
-        app:layout_constraintVertical_bias="0.501" />
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
