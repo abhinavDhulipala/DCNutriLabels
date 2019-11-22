@@ -18,9 +18,4 @@ public class PictureAnalysis extends AppCompatActivity {
         displayReadText = findViewById(R.id.readText);
         displayReadText.setText(readText);
     }
-
-    @Override
-    public void onBackPressed() {
-        finish();
-    }
 }

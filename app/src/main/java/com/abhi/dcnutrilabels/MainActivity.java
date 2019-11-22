@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     Button cameraButton, galleryButton, rotateButton;
     Bitmap bitmap;
     String readText, filePath;
+    ProgressBar progressBar;
     boolean validImageToAnalyze = false;
 
     private static final int CAMERA_RESULT = 1, GALLERY_RESULT = 2;
@@ -63,9 +65,11 @@ public class MainActivity extends AppCompatActivity {
                 Intent analyze = new Intent(getApplicationContext(), PictureAnalysis.class);
                 analyze.putExtra("readText", readText);
                 startActivity(analyze);
-                retPic.setEnabled(bitmap != null);
+                retPic.setEnabled(bitmap != null && readText.length() > 0);
             }
         });
+        progressBar = findViewById(R.id.analysisRunning);
+        progressBar.setVisibility(View.INVISIBLE);
         cameraButton = findViewById(R.id.cameraButton);
         cameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -112,7 +116,6 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
             if (requestCode == CAMERA_RESULT) {
-                //TODO(1): not a rigorous fix. Some phones might don't rotate like this
                 bitmap = BitmapFactory.decodeFile(filePath);
                 retPic.setImageBitmap(bitmap);
                 runTextRecognition(bitmap);
@@ -141,7 +144,9 @@ public class MainActivity extends AppCompatActivity {
         detector.processImage(fbImage).addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
             @Override
             public void onSuccess(FirebaseVisionText firebaseVisionText) {
+                progressBar.setVisibility(View.VISIBLE);
                 processTextRecognitionResults(firebaseVisionText);
+                progressBar.setVisibility(View.INVISIBLE);
             }
         });
 
@@ -150,24 +155,25 @@ public class MainActivity extends AppCompatActivity {
 
     private void processTextRecognitionResults(FirebaseVisionText firebaseVisionText) {
         List<FirebaseVisionText.TextBlock> blocks = firebaseVisionText.getTextBlocks();
-        StringBuilder outputToView = new StringBuilder();
+        StringBuilder ingredients = new StringBuilder();
         for (FirebaseVisionText.TextBlock block : blocks) {
             if (block.getText().toLowerCase().contains("ingredients")) {
-                outputToView.append(block.getText());
+                ingredients.append(block.getText());
             }
         }
-        readText = outputToView.toString();
+        readText = ingredients.toString();
         String message;
-        if (outputToView.length() == 0) {
+        if (ingredients.length() == 0) {
             message = "No ingredients found! Try rotating or try another image";
             Toast noneGleaned = Toast.makeText(getApplicationContext()
                     , message, Toast.LENGTH_SHORT);
             noneGleaned.show();
+            retPic.setEnabled(false);
         } else {
             message = "We found something!! yay, click on image for analysis";
             Toast gleaned = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG);
             gleaned.show();
-            retPic.setEnabled(validImageToAnalyze = true);
+            retPic.setEnabled(true);
         }
     }
 
