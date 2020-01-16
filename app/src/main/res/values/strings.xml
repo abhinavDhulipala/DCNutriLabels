@@ -8,4 +8,11 @@
     <string name="rotate">Rotate</string>
     <string name="take_the_pic_please">Take The Pic Please</string>
     <string name="yeet">yeet</string>
+    <string name="title_activity_user__details">User_Details</string>
+    <string name="submit">Submit</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="school_organization">School/Organization</string>
+    <string name="email">Email</string>
+    <string name="manually_search_ingredient">Manually Search Ingredient</string>
 </resources>

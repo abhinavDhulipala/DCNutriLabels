@@ -1,7 +1,6 @@
 package com.abhi.dcnutrilabels;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -16,6 +15,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -24,6 +24,9 @@ import androidx.core.content.FileProvider;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.ml.vision.FirebaseVision;
+import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcode;
+import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetector;
+import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetectorOptions;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
@@ -37,14 +40,15 @@ import java.util.Locale;
 
 import static android.os.Environment.getExternalStoragePublicDirectory;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnSuccessListener{
 
     ImageView retPic;
     Button cameraButton, galleryButton, rotateButton;
     Bitmap bitmap;
     String readText, filePath;
     ProgressBar progressBar;
-    boolean validImageToAnalyze = false;
+    SearchView search;
+    private StringBuilder textRecogVal, barcodeVal;
 
     private static final int CAMERA_RESULT = 1, GALLERY_RESULT = 2;
 
@@ -57,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         requestPermissions(permissionsForCameraAndExternalStorage, GALLERY_RESULT);
 
         retPic = findViewById(R.id.imageGOC);
-        retPic.setEnabled(validImageToAnalyze);
+        retPic.setEnabled(false);
         retPic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -65,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
                 Intent analyze = new Intent(getApplicationContext(), PictureAnalysis.class);
                 analyze.putExtra("readText", readText);
                 startActivity(analyze);
-                retPic.setEnabled(bitmap != null && readText.length() > 0);
+                retPic.setEnabled(bitmap != null && readText != null && readText.length() > 0);
             }
         });
         progressBar = findViewById(R.id.analysisRunning);
@@ -104,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
                     bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth()
                             , bitmap.getHeight(), rotate90,true);
                     retPic.setImageBitmap(bitmap);
-                    runTextRecognition(bitmap);
+                    runImageRecognition(FirebaseVisionImage.fromBitmap(bitmap));
                 }
                 rotateButton.setEnabled(true);
             }
@@ -115,66 +119,80 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
-            if (requestCode == CAMERA_RESULT) {
-                bitmap = BitmapFactory.decodeFile(filePath);
-                retPic.setImageBitmap(bitmap);
-                runTextRecognition(bitmap);
-            } else if (requestCode == GALLERY_RESULT) {
+            if (requestCode == GALLERY_RESULT) {
                 assert data != null : "data should never be null";
                 Uri selectedImage = data.getData();
                 String[] filePathColumn = {MediaStore.Images.Media.DATA};
                 assert selectedImage != null : "selected image is null for some reason";
                 Cursor cursor = getContentResolver().query(selectedImage,
                         filePathColumn, null, null, null);
-                assert cursor != null : "cursor is null for some reason";
+                assert cursor != null : "cursor is null for some reason, shouldn't happen";
                 cursor.moveToFirst();
-                int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-                filePath = cursor.getString(columnIndex);
+                filePath = cursor.getString(cursor.getColumnIndex(filePathColumn[0]));
                 cursor.close();
-                bitmap = BitmapFactory.decodeFile(filePath);
-                runTextRecognition(bitmap);
-                retPic.setImageBitmap(bitmap);
             }
+            bitmap = BitmapFactory.decodeFile(filePath);
+            retPic.setImageBitmap(bitmap);
+            runImageRecognition(FirebaseVisionImage.fromBitmap(bitmap));
+            String message;
+            retPic.setEnabled(true);
+            Log.d("fin", "final Builders" + readText);
+            if (!barcodeVal.toString().isEmpty()) {
+                readText = barcodeVal.toString();
+                message = "barcode found! Click image to explore product";
+            } else if (!textRecogVal.toString().isEmpty()) {
+                readText = textRecogVal.toString();
+                message = "yay! Ingredients found. Click image to analyze";
+            } else {
+                readText = "";
+                retPic.setEnabled(false);
+                message = "oh no! we didn't find a barcode or ingredients rotate the image or" +
+                        "choose another picture";
+            }
+            Toast imageResults = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT);
+            imageResults.show();
         }
     }
 
-    private void runTextRecognition(Bitmap bitmap) {
-        FirebaseVisionImage fbImage = FirebaseVisionImage.fromBitmap(bitmap);
-        FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
-        detector.processImage(fbImage).addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
+    private void runImageRecognition(FirebaseVisionImage fvImage) {
+        FirebaseVisionBarcodeDetector barcodeDetector = FirebaseVision.getInstance()
+                .getVisionBarcodeDetector(new FirebaseVisionBarcodeDetectorOptions.Builder()
+                        .setBarcodeFormats(FirebaseVisionBarcode.FORMAT_UPC_A,
+                                FirebaseVisionBarcode.FORMAT_UPC_E).build());
+        textRecogVal = new StringBuilder();
+        barcodeVal = new StringBuilder();
+        barcodeDetector.detectInImage(fvImage).addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionBarcode>>() {
             @Override
-            public void onSuccess(FirebaseVisionText firebaseVisionText) {
-                progressBar.setVisibility(View.VISIBLE);
-                processTextRecognitionResults(firebaseVisionText);
-                progressBar.setVisibility(View.INVISIBLE);
+            public void onSuccess(List<FirebaseVisionBarcode> firebaseVisionBarcodes) {
+                if (!firebaseVisionBarcodes.isEmpty())
+                    barcodeVal.append(firebaseVisionBarcodes.get(0).getRawValue());
+                Log.d("brcd", "listener: " + barcodeVal);
             }
         });
 
+        FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+        detector.processImage(fvImage).addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
+            @Override
+            public void onSuccess(FirebaseVisionText firebaseVisionText) {
+                textRecogVal.append(processTextRecognitionResults(firebaseVisionText));
+                if (!textRecogVal.toString().isEmpty()) {
+                    readText = textRecogVal.toString();
+                }
+                Log.d("txtr", "listener: " + textRecogVal);
+            }
+        });
+        Log.d("brcd", "Out: " + barcodeVal);
 
     }
 
-    private void processTextRecognitionResults(FirebaseVisionText firebaseVisionText) {
+    private String processTextRecognitionResults(FirebaseVisionText firebaseVisionText) {
         List<FirebaseVisionText.TextBlock> blocks = firebaseVisionText.getTextBlocks();
         StringBuilder ingredients = new StringBuilder();
         for (FirebaseVisionText.TextBlock block : blocks) {
-            if (block.getText().toLowerCase().contains("ingredients")) {
+            if (block.getText().toLowerCase().contains("ingredients"))
                 ingredients.append(block.getText());
-            }
         }
-        readText = ingredients.toString();
-        String message;
-        if (ingredients.length() == 0) {
-            message = "No ingredients found! Try rotating or try another image";
-            Toast noneGleaned = Toast.makeText(getApplicationContext()
-                    , message, Toast.LENGTH_SHORT);
-            noneGleaned.show();
-            retPic.setEnabled(false);
-        } else {
-            message = "We found something!! yay, click on image for analysis";
-            Toast gleaned = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG);
-            gleaned.show();
-            retPic.setEnabled(true);
-        }
+        return ingredients.toString();
     }
 
     private void retrieveImageFromCamera() {
@@ -204,4 +222,7 @@ public class MainActivity extends AppCompatActivity {
         return image;
 
     }
+
+    @Override
+    public void onSuccess(Object o) {}
 }

@@ -13,6 +13,10 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
+            android:name=".userDetails"
+            android:label="@string/title_activity_user__details"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+        <activity
             android:name=".PictureAnalysis"
             android:label="@string/title_activity_picture_analysis"
             android:parentActivityName=".MainActivity"
@@ -22,6 +26,9 @@
                 android:value="com.abhi.dcnutrilabels.MainActivity" />
         </activity>
         <activity android:name=".MainActivity">
+            <meta-data
+                android:name="com.google.firebase.ml.vision.DEPENDENCIES"
+                android:value="barcode" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
