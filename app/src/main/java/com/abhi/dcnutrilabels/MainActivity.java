@@ -22,6 +22,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcode;
@@ -40,17 +41,15 @@ import java.util.Locale;
 
 import static android.os.Environment.getExternalStoragePublicDirectory;
 
-public class MainActivity extends AppCompatActivity implements OnSuccessListener{
+public class MainActivity extends AppCompatActivity{
 
     ImageView retPic;
     Button cameraButton, galleryButton, rotateButton;
     Bitmap bitmap;
-    String readText, filePath;
+    String filePath;
     ProgressBar progressBar;
-    SearchView search;
-    private StringBuilder textRecogVal, barcodeVal;
-
     private static final int CAMERA_RESULT = 1, GALLERY_RESULT = 2;
+    private static final String BRCD = "brcd";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,21 +58,7 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
         String [] permissionsForCameraAndExternalStorage = {
                 Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
         requestPermissions(permissionsForCameraAndExternalStorage, GALLERY_RESULT);
-
         retPic = findViewById(R.id.imageGOC);
-        retPic.setEnabled(false);
-        retPic.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                retPic.setEnabled(false);
-                Intent analyze = new Intent(getApplicationContext(), PictureAnalysis.class);
-                analyze.putExtra("readText", readText);
-                startActivity(analyze);
-                retPic.setEnabled(bitmap != null && readText != null && readText.length() > 0);
-            }
-        });
-        progressBar = findViewById(R.id.analysisRunning);
-        progressBar.setVisibility(View.INVISIBLE);
         cameraButton = findViewById(R.id.cameraButton);
         cameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -134,24 +119,17 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
             bitmap = BitmapFactory.decodeFile(filePath);
             retPic.setImageBitmap(bitmap);
             runImageRecognition(FirebaseVisionImage.fromBitmap(bitmap));
-            String message;
-            retPic.setEnabled(true);
-            Log.d("fin", "final Builders" + readText);
-            if (!barcodeVal.toString().isEmpty()) {
-                readText = barcodeVal.toString();
-                message = "barcode found! Click image to explore product";
-            } else if (!textRecogVal.toString().isEmpty()) {
-                readText = textRecogVal.toString();
-                message = "yay! Ingredients found. Click image to analyze";
-            } else {
-                readText = "";
-                retPic.setEnabled(false);
-                message = "oh no! we didn't find a barcode or ingredients rotate the image or" +
-                        "choose another picture";
-            }
-            Toast imageResults = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT);
-            imageResults.show();
         }
+    }
+
+    /***
+     * Leave the current activity and migrate to a separate activity for picture analysis.
+     * @Call: in FireBase async functions
+     */
+    private void switchContext(String message) {
+        Intent analyze = new Intent(getApplicationContext(), PictureAnalysis.class);
+        analyze.putExtra("readText", message);
+        startActivity(analyze);
     }
 
     private void runImageRecognition(FirebaseVisionImage fvImage) {
@@ -159,14 +137,10 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
                 .getVisionBarcodeDetector(new FirebaseVisionBarcodeDetectorOptions.Builder()
                         .setBarcodeFormats(FirebaseVisionBarcode.FORMAT_UPC_A,
                                 FirebaseVisionBarcode.FORMAT_UPC_E).build());
-        textRecogVal = new StringBuilder();
-        barcodeVal = new StringBuilder();
         barcodeDetector.detectInImage(fvImage).addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionBarcode>>() {
             @Override
             public void onSuccess(List<FirebaseVisionBarcode> firebaseVisionBarcodes) {
-                if (!firebaseVisionBarcodes.isEmpty())
-                    barcodeVal.append(firebaseVisionBarcodes.get(0).getRawValue());
-                Log.d("brcd", "listener: " + barcodeVal);
+                if (!firebaseVisionBarcodes.isEmpty()) switchContext(firebaseVisionBarcodes.get(0).getRawValue());
             }
         });
 
@@ -174,23 +148,18 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
         detector.processImage(fvImage).addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
             @Override
             public void onSuccess(FirebaseVisionText firebaseVisionText) {
-                textRecogVal.append(processTextRecognitionResults(firebaseVisionText));
-                if (!textRecogVal.toString().isEmpty()) {
-                    readText = textRecogVal.toString();
-                }
-                Log.d("txtr", "listener: " + textRecogVal);
+                String ingredients = processTextRecognitionResults(firebaseVisionText);
+                if (!ingredients.isEmpty()) switchContext(ingredients);
             }
         });
-        Log.d("brcd", "Out: " + barcodeVal);
-
     }
 
     private String processTextRecognitionResults(FirebaseVisionText firebaseVisionText) {
         List<FirebaseVisionText.TextBlock> blocks = firebaseVisionText.getTextBlocks();
         StringBuilder ingredients = new StringBuilder();
         for (FirebaseVisionText.TextBlock block : blocks) {
-            if (block.getText().toLowerCase().contains("ingredients"))
-                ingredients.append(block.getText());
+            String text = block.getText().toLowerCase();
+            if (text.contains("ingredients")) ingredients.append(text);
         }
         return ingredients.toString();
     }
@@ -222,7 +191,4 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
         return image;
 
     }
-
-    @Override
-    public void onSuccess(Object o) {}
 }
