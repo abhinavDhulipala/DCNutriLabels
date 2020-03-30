@@ -1,6 +1,7 @@
 package com.abhi.dcnutrilabels;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -24,6 +25,7 @@ import androidx.core.content.FileProvider;
 
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.vision.text.TextRecognizer;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcode;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetector;
@@ -144,7 +146,23 @@ public class MainActivity extends AppCompatActivity{
             }
         });
 
-        FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+
+        FirebaseVisionTextRecognizer detector;
+        try{
+             detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+        } catch(Exception e) {
+            try {
+                // If the onDevice fails, we use the cloud model
+                detector = FirebaseVision.getInstance().getCloudTextRecognizer();
+            } catch (Exception e1) {
+                // The cloud model will fail if the device hasn't internet connection
+                String message = "Firebase in-built failed:: must connect to internet to proceed";
+                Log.d("Vis", message);
+                Toast visionFailed = Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG);
+                visionFailed.show();
+                throw new AssertionError(message);
+            }
+        }
         detector.processImage(fvImage).addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
             @Override
             public void onSuccess(FirebaseVisionText firebaseVisionText) {

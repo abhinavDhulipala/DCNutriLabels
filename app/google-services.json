@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "94493145280",
+    "firebase_url": "https://dcnutrilabels.firebaseio.com",
+    "project_id": "dcnutrilabels",
+    "storage_bucket": "dcnutrilabels.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:94493145280:android:cd103c3263ecb83c20d525",
+        "android_client_info": {
+          "package_name": "com.abhi.dcnutrilabels"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "94493145280-9kvdl3qtu5kjr9a3030beqo1oh18hnrg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.abhi.dcnutrilabels",
+            "certificate_hash": "f4f7130dbe1a7b632a7df6e58b5ec116fde30f1a"
+          }
+        },
+        {
+          "client_id": "94493145280-0cinakvc42bhs8h4ih8vscnntltkqqlq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHdqCwhUHoYlw9gYHIgVkjCxBwbauwabI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "94493145280-0cinakvc42bhs8h4ih8vscnntltkqqlq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
